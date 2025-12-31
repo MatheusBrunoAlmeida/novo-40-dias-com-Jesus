@@ -2,7 +2,18 @@ import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/login-button";
 import Image from 'next/image';
 
-export default function Home() {
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+
+export default async function Home() {
+  const session = await auth();
+
+  if (session) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
+
   return (
     <main className="flex h-full flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-400 to-blue-800">
       <div className="space-y-6 text-center">
