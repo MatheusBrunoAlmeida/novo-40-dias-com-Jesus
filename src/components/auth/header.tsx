@@ -17,6 +17,7 @@ export const Header = ({
 }: HeaderProps) => {
   return (
     <div className="w-full flex flex-col gap-y-4 items-center justify-center">
+      <Image src="/images/logodkm.png" alt="Logo" width={50} height={50} />
       <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
       <p className="text-muted-foreground text-sm">
         {label}

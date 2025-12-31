@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { CheckIcon } from "@radix-ui/react-icons";
+import confetti from "canvas-confetti";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,14 @@ export const DayCard = ({
   const [isPending, startTransition] = useTransition();
 
   const onClick = () => {
+    if (!isCompleted) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+
     startTransition(() => {
       toggleReading(dayNumber);
     });

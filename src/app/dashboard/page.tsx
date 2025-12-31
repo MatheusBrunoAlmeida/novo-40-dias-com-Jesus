@@ -28,6 +28,9 @@ const DashboardPage = async () => {
 
   return (
     <div className="flex flex-col gap-y-6">
+      <div className="flex justify-center items-center gap-x-2">
+        <Image src="/images/logodkm.png" alt="" width={100} height={100} />
+      </div>
       <Image src={logo} alt="" />
       <div className="bg-white rounded-xl p-6 shadow-sm">
         <h1 className="text-2xl font-semibold mb-4 text-center">Meu Progresso 🔥</h1>
