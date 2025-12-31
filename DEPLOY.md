@@ -1,34 +1,55 @@
-# Guia de Deploy na Vercel com Banco de Dados
+# Guia de Deploy: Vercel + Neon (PostgreSQL)
 
-Este guia explicará como colocar seu projeto online usando a Vercel e um banco de dados PostgreSQL (Vercel Postgres ou Neon).
+Este guia contém o passo a passo específico para configurar seu projeto na **Vercel** usando o banco de dados **Neon.tech**.
 
-## 1. Preparação do Projeto
+## 1. Configuração no Neon.tech
 
-### Banco de Dados
-Atualmente o projeto usa SQLite, que não funciona na Vercel (pois o sistema de arquivos é temporário). Vamos mudar para PostgreSQL.
+1.  Crie uma conta em [neon.tech](https://neon.tech) e crie um novo projeto.
+2.  No seu Dashboard do Neon, você verá uma seção "Connection Details".
+3.  Você precisará de duas URLs:
+    *   **Pooled Connection** (para a aplicação): Geralmente começa com `postgres://...` e tem `pgbouncer` ou similar na string, ou você seleciona a opção "Pooled".
+    *   **Direct Connection** (para migrações): Selecione a opção "Direct" (ou desmarque "Pooled") para pegar a conexão direta.
 
-1.  Crie um projeto na [Vercel](https://vercel.com).
-2.  Vá na aba "Storage" e crie um novo banco "Postgres".
-3.  Após criado, copie as variáveis de ambiente (`POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, etc).
-    *   Para facilitar, geralmente usamos apenas uma variável `DATABASE_URL` no projeto. Conecte o projeto Vercel ao seu repositório GitHub para ele puxar essas envs automaticamente, ou copie a string de conexão.
+## 2. Environment Variables na Vercel
 
-### Variáveis de Ambiente
-Na Vercel, em Settings -> Environment Variables, adicione:
-- `DATABASE_URL`: A URL do seu banco Postgres.
-- `AUTH_SECRET`: Um código secreto para o NextAuth (gere um com `openssl rand -base64 32` ou use um gerador de senha forte).
-- `NEXT_PUBLIC_APP_URL`: A URL do seu site (ex: `https://seu-projeto.vercel.app`).
+Vá nas configurações do seu projeto na Vercel (Settings -> Environment Variables) e adicione:
 
-## 2. Alterações no Código
+| Variável | Valor | Descrição |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `postgres://...` (Sua URL **Pooled**) | Usada pela aplicação para alta performance. |
+| `DIRECT_URL` | `postgres://...` (Sua URL **Direct**) | Usada pelo Prisma Migrate para fazer alterações no schema. |
+| `AUTH_SECRET` | (Gere um hash seguro) | Segurança do NextAuth. Pode gerar com `openssl rand -base64 32`. |
+| `NEXT_PUBLIC_APP_URL` | `https://seu-projeto.vercel.app` | URL final do seu site após o deploy (pode preencher depois do primeiro deploy ou usar a URL provisória). |
 
-Eu farei as alterações necessárias no `schema.prisma` para suportar PostgreSQL.
+## 3. Preparando o Banco de Dados
 
-### Scripts
-Adicionaremos um script `postinstall` no `package.json` para gerar o cliente do Prisma automaticamente durante o build na Vercel:
-`"postinstall": "prisma generate"`
+Como estamos mudando de SQLite para Postgres, seu banco na nuvem estará vazio. O comando de deploy tentará rodar as migrações, mas é bom garantir que os arquivos de migração locais estão sincronizados.
 
-## 3. Deploy
+Recomendação: Como você ainda não tem dados de produção importantes, podemos resetar as migrações para garantir compatibilidade total com Postgres.
 
-1.  Envie seu código para o GitHub.
-2.  Na Vercel, clique em "Import Project" e selecione seu repositório.
-3.  Configure as variáveis de ambiente listadas acima.
-4.  Clique em Deploy.
+No seu terminal local (antes de subir o código):
+1.  Apague a pasta `prisma/migrations`.
+2.  Delete o arquivo `prisma/dev.db` (se existir).
+3.  Rode: `npx prisma migrate dev --name init`
+    *   Isso vai falhar se você não tiver a `DATABASE_URL` do Neon configurada no seu `.env` local.
+    *   **Opção Simples:** Apenas suba o código. O comando `postinstall` que configuramos (`prisma generate`) vai preparar o cliente. Para criar as tabelas no Neon, você pode rodar o comando migrate via Vercel ou conectar localmente.
+
+**Melhor abordagem para o primeiro deploy:**
+1.  Copie a **Direct Connection** do Neon.
+2.  Cole no seu `.env` local como `DATABASE_URL` e `DIRECT_URL`.
+3.  Rode `npx prisma migrate dev --name init` localmente. Isso cria as tabelas no Neon.
+4.  Rode `npx prisma db seed` para criar o usuário admin no Neon.
+
+## 4. Deploy
+
+1.  Faça o commit e push das alterações (`git push`).
+2.  A Vercel deve iniciar o deploy automaticamente.
+3.  Acesse seu site!
+
+---
+
+**Resumo de variáveis no .env local para teste:**
+```env
+DATABASE_URL="postgres://...(pooled)..."
+DIRECT_URL="postgres://...(direct)..."
+```
