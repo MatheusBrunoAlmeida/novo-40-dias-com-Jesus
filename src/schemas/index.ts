@@ -35,3 +35,15 @@ export const RegisterSchema = z.object({
   }),
   otherStructure: z.string().optional(),
 });
+
+export const ResetSchema = z.object({
+  email: z.string().email({
+    message: "Email é obrigatório",
+  }),
+});
+
+export const NewPasswordSchema = z.object({
+  password: z.string().min(6, {
+    message: "Senha deve ter no mínimo 6 caracteres",
+  }),
+});

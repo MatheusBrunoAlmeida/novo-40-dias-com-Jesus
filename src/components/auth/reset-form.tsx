@@ -3,9 +3,10 @@
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { LoginSchema } from "@/schemas";
+import { ResetSchema } from "@/schemas";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -19,44 +20,46 @@ import { CardWrapper } from "@/components/auth/card-wrapper";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
-import { login } from "@/actions/login";
+import { reset } from "@/actions/reset";
 
-export const LoginForm = () => {
+export const ResetForm = () => {
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
+  const form = useForm<z.infer<typeof ResetSchema>>({
+    resolver: zodResolver(ResetSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  const onSubmit = (values: z.infer<typeof LoginSchema>) => {
+  const onSubmit = (values: z.infer<typeof ResetSchema>) => {
     setError("");
     setSuccess("");
 
     startTransition(() => {
-      login(values)
+      reset(values)
         .then((data) => {
-          if (data?.error) {
-            form.reset();
-            setError(data.error);
+          // @ts-ignore
+          if (data?.token) {
+            // @ts-ignore
+            router.push(`/auth/new-password?token=${data.token}`);
+            return;
           }
-          // On success, redirect handles it, but we can set success message if redirect is delayed or disabled
-          // Current login action redirects.
-        })
-        .catch(() => setError("Algo deu errado!"));
+
+          setError(data?.error);
+          setSuccess(data?.success);
+        });
     });
   };
 
   return (
     <CardWrapper
-      headerLabel="Bem-vindo de volta"
-      backButtonLabel="Não tem uma conta?"
-      backButtonHref="/register"
+      headerLabel="Esqueceu sua senha?"
+      backButtonLabel="Voltar para login"
+      backButtonHref="/login"
     >
       <Form {...form}>
         <form
@@ -69,43 +72,15 @@ export const LoginForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Digite seu email</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       disabled={isPending}
-                      placeholder="john.doe@example.com"
+                      placeholder="joao@exemplo.com"
                       type="email"
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={isPending}
-                      placeholder="******"
-                      type="password"
-                    />
-                  </FormControl>
-                  <Button
-                    size="sm"
-                    variant="link"
-                    asChild
-                    className="px-0 font-normal"
-                  >
-                    <a href="/auth/reset">
-                      Esqueceu sua senha?
-                    </a>
-                  </Button>
                   <FormMessage />
                 </FormItem>
               )}
@@ -118,7 +93,7 @@ export const LoginForm = () => {
             type="submit"
             className="w-full"
           >
-            Entrar
+            Validar email
           </Button>
         </form>
       </Form>
