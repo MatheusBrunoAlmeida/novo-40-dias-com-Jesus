@@ -14,6 +14,8 @@ import {
 interface AdminPageProps {
   searchParams: Promise<{
     day?: string;
+    city?: string;
+    structure?: string;
   }>
 }
 
